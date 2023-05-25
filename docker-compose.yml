@@ -13,11 +13,21 @@ services:
     depends_on:
       - backend
     ports:
-      - '127.0.0.1:8080:8080'
+      - '0.0.0.0:8228:8080'
     read_only: true
     tmpfs:
       - /tmp
+    networks:
+      - traefik
     restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.grocy.rule=Host(`grocy.shaffer.network`)
+      - traefik.http.routers.grocy.entrypoints=https
+      - traefik.http.routers.grocy.tls=true
+      - traefik.http.routers.grocy.middlewares=chain-oauth@file
+      - traefik.http.routers.grocy.service=grocy
+      - traefik.http.services.grocy.loadbalancer.server.port=8080
 
   backend:
     image: "grocy/backend:v3.3.2"
@@ -33,10 +43,14 @@ services:
     tmpfs:
       - /tmp
     volumes:
-      - app-db:/var/www/data
+      - /home/andrew/docker/grocy/db:/var/www/data
     env_file:
       - grocy.env
+    networks:
+      - traefik
     restart: unless-stopped
 
-volumes:
-  app-db:
+networks:
+  traefik:
+    name: traefik
+    external: true
